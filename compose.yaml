@@ -1,0 +1,102 @@
+version: '3.0'
+
+
+services:
+  postgres:
+    image: postgres:16.4
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=users
+    volumes:
+      - ./db-data/postgres/:/var/lib/postgresql/data/
+    networks:
+      - microservice-network
+
+  mongo:
+    image: mongo:6
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=logs
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password
+    volumes:
+      - ./db-data/mongo/:/data/db/
+    networks:
+      - microservice-network
+
+  rabitmq:
+    image: rabbitmq:4.0-rc-alpine
+    ports:
+      - "5672:5672"
+    volumes:
+      - ./db-data/rabbitmq/:/var/lib/rabbitmq/
+    networks:
+      - microservice-network
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - microservice-network
+
+  broker-service:
+    build: ./broker-service
+    ports:
+      - "8080:80"
+    networks:
+      - microservice-network
+
+  logger-service:
+    build: ./logger-service
+    networks:
+      - microservice-network
+
+  listener-service:
+    build: ./listener-service
+    networks:
+      - microservice-network
+
+  mail-service:
+    build: ./mail-service
+    environment:
+      - MAIL_DOMAIN=localhost
+      - MAIL_HOST=mailhog
+      - MAIL_PORT=1025
+      - MAIL_USERNAME= 
+      - MAIL_PASSWORD= 
+      - MAIL_ENCRYPTION=none
+      - MAIL_NAME=Michael Adeyemo
+      - MAIL_FROM_ADDRESS=michael.Adeyemo@example.com
+    networks:
+      - microservice-network
+
+  authentication-service:
+    build: ./authentication-service
+    ports:
+      - "8083:80"
+    environment:
+      - DSN=postgresql://postgres:password@postgres:5432/users?sslmode=disable
+    depends_on:
+      - postgres
+    networks:
+      - microservice-network
+
+  front-end:
+    build: ./front-end
+    ports:
+      - "8081:8081"
+    depends_on:
+      - broker-service
+    networks:
+      - microservice-network
+
+
+networks:
+  microservice-network:
+    driver: bridge    

@@ -1,0 +1,83 @@
+version: '3'
+
+
+services:
+  broker-service:
+    image: morgan0007/broker-service:1.0.0
+    ports:
+      - "8080:80"
+    deploy:
+      mode: replicated
+      replicas: 1
+  
+  listener-service:
+    image: morgan0007/listener-service:1.0.0
+    deploy:
+      mode: replicated
+      replicas: 1
+
+  authentication-service:
+    image: morgan0007/authentication-service:1.0.0
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      - DSN=postgresql://postgres:password@postgres:5432/users?sslmode=disable
+ 
+  logger-service:
+    image: morgan0007/logger-service:1.0.0
+    deploy:
+      mode: replicated
+      replicas: 1
+
+  mail-service:
+    image: morgan0007/mail-service:1.0.0
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      - MAIL_DOMAIN=localhost
+      - MAIL_HOST=mailhog
+      - MAIL_PORT=1025
+      - MAIL_USERNAME= 
+      - MAIL_PASSWORD= 
+      - MAIL_ENCRYPTION=none
+      - MAIL_NAME=Michael Adeyemo
+      - MAIL_FROM_ADDRESS=michael.Adeyemo@example.com
+
+  rabitmq:
+    image: rabbitmq:4.0-rc-alpine
+    deploy:
+      mode: global
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    ports:
+      - "8025:8025"
+    deploy:
+      mode: global
+
+  mongo:
+    image: mongo:6
+    environment:
+      - MONGO_INITDB_DATABASE=logs
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password
+    volumes:
+      - ./db-data/mongo/:/data/db/
+    deploy:
+      mode: global 
+
+  postgres:
+    image: postgres:16.4
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=users
+    volumes:
+      - ./db-data/postgres/:/var/lib/postgresql/data/
+    deploy:
+      mode: replicated
+      replicas: 1
